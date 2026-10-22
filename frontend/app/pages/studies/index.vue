@@ -44,6 +44,12 @@
                 <div class="flex items-center justify-end gap-3">
                   <NuxtLink :to="`/studies/${s.id}`" class="text-brand-600 hover:text-brand-700 text-xs font-medium">Ver →</NuxtLink>
                   <button
+                    v-if="can('studies:edit')"
+                    type="button"
+                    class="text-xs font-medium text-gray-500 hover:text-gray-800"
+                    @click="askEdit(s)"
+                  >Editar</button>
+                  <button
                     v-if="can('studies:delete')"
                     type="button"
                     class="text-xs font-medium text-red-500 hover:text-red-700"
@@ -59,6 +65,8 @@
         <UiPagination :page="meta.page" :pages="meta.pages" :total="meta.total" :limit="meta.limit" @change="fetchPage" />
       </div>
     </div>
+
+    <StudyEditModal v-model="editOpen" :study="toEdit" @saved="fetchPage(meta.page)" />
 
     <StudyDeleteModal
       v-model="deleteOpen"
@@ -78,6 +86,14 @@ import { useRBAC } from "~/composables/useRBAC";
 definePageMeta({ title: "Estudios", middleware: "auth" });
 
 const { can } = useRBAC();
+
+const editOpen = ref(false);
+const toEdit   = ref<any>(null);
+
+function askEdit(s: any) {
+  toEdit.value  = s;
+  editOpen.value = true;
+}
 
 const deleteOpen = ref(false);
 const toDelete   = ref<any>(null);

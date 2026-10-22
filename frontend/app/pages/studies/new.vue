@@ -76,16 +76,7 @@ const route  = useRoute();
 const notif  = useNotification();
 const auth   = useAuthStore();
 
-const lesionTypes = [
-  { value: "OTRO",                    label: "Otro / sin definir" },
-  { value: "MELANOMA",                label: "Melanoma" },
-  { value: "NEVUS",                   label: "Nevus" },
-  { value: "CARCINOMA_BASOCELULAR",   label: "Carcinoma basocelular" },
-  { value: "CARCINOMA_ESPINOCELULAR", label: "Carcinoma espinocelular" },
-  { value: "QUERATOSIS_ACTINCA",      label: "Queratosis actínica" },
-  { value: "DERMATOFIBROMA",          label: "Dermatofibroma" },
-  { value: "LESION_VASCULAR",         label: "Lesión vascular" },
-];
+const lesionTypes = LESION_TYPES;   // app/utils/lesionTypes.ts (compartido con el formulario de edición)
 
 const form = reactive({
   patientId:        (route.query.patientId as string) ?? "",

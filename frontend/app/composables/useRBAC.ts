@@ -9,6 +9,7 @@ export function useRBAC() {
       "users:manage":    ["ADMIN"],
       "patients:delete": ["ADMIN", "DOCTOR"],
       "studies:create":  ["ADMIN", "DOCTOR", "CAPTURISTA"],
+      "studies:edit":    ["ADMIN", "DOCTOR", "CAPTURISTA"],
       "studies:delete":  ["ADMIN", "DOCTOR"],
       "analysis:run":    ["ADMIN", "DOCTOR", "CAPTURISTA"],
       "reports:export":  ["ADMIN", "DOCTOR"],
