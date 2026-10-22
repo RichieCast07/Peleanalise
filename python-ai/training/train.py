@@ -45,13 +45,28 @@ SEED = 42
 
 # ── Datos ────────────────────────────────────────────────────────────────────
 
-def load_data(data_dir: str):
+def load_data(data_dir: str, dedupe: bool = True):
+    """
+    Carga los shards. El espejo de Hugging Face repite imágenes idénticas (13.354 filas para 10.015
+    imágenes únicas de HAM10000); con dedupe=True se conserva una sola copia de cada image_id.
+    (dedupe=False reproduce la partición de modelos entrenados antes de esta corrección.)
+    """
     shards = sorted(glob.glob(os.path.join(data_dir, "shards", "shard*_X.npy")))
     if not shards:
         raise SystemExit("No hay datos. Ejecuta primero: python training/prepare_data.py")
-    X = np.concatenate([np.load(p) for p in shards])
-    meta = pd.concat([pd.read_csv(p.replace("_X.npy", "_meta.csv")) for p in shards], ignore_index=True)
-    meta = meta.drop_duplicates("image_id").reset_index(drop=True) if len(meta) != len(X) else meta
+    xs, metas, seen = [], [], set()
+    for p in shards:
+        x = np.load(p)
+        m = pd.read_csv(p.replace("_X.npy", "_meta.csv"))
+        assert len(m) == len(x), "metadatos e imágenes desalineados"
+        if dedupe:
+            keep = np.array([iid not in seen for iid in m["image_id"]])
+            seen.update(m["image_id"][keep])
+            x, m = x[keep], m[keep]
+        xs.append(x)
+        metas.append(m)
+    X = np.concatenate(xs)
+    meta = pd.concat(metas, ignore_index=True)
     assert len(meta) == len(X), "metadatos e imágenes desalineados"
     meta["y"] = meta["dx"].map(DX_TO_CLASS)
     assert meta["y"].notna().all(), f"diagnósticos desconocidos: {set(meta['dx']) - set(DX_TO_CLASS)}"
@@ -167,8 +182,42 @@ def bootstrap_ci(fn, y, pred, groups, n=1000):
     return [float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))]
 
 
-def evaluate(probs, y, meta_te):
-    pred = probs.argmax(1)
+def apply_decision(probs, tm, tn):
+    """
+    Regla de decisión orientada a cribado (misma lógica que app/services/ai_model.py):
+      Maligno    si P(Maligno) >= tm
+      Sospechoso si P(Sospechoso)+P(Maligno) >= tn
+      Benigno    en otro caso
+    Equivale a mover el umbral para favorecer la sensibilidad (más falsas alarmas, menos malignos omitidos).
+    """
+    pred = np.zeros(len(probs), dtype=np.int32)
+    pred[(probs[:, 1] + probs[:, 2]) >= tn] = 1
+    pred[probs[:, 2] >= tm] = 2
+    return pred
+
+
+def tune_decision(probs, y, target=0.90):
+    """
+    Busca (tm, tn) en VALIDACIÓN: entre las reglas que dejan pasar como Benigno a lo sumo (1-target) de
+    los malignos, elige la que menos benignos marca como alerta. Si ninguna alcanza el objetivo, la de
+    mayor sensibilidad.
+    """
+    grid = np.round(np.arange(0.03, 0.91, 0.02), 2)
+    mal, ben = y == 2, y == 0
+    best, best_key = None, None
+    for tm in grid:
+        for tn in grid:
+            pred = apply_decision(probs, tm, tn)
+            sens = float(((pred > 0) & mal).sum() / max(mal.sum(), 1))
+            spec = float(((pred == 0) & ben).sum() / max(ben.sum(), 1))
+            key = (1, spec, sens) if sens >= target else (0, sens, spec)
+            if best_key is None or key > best_key:
+                best_key, best = key, (float(tm), float(tn), sens, spec)
+    return {"tm": best[0], "tn": best[1], "sens_no_benigno_val": best[2], "especificidad_val": best[3], "objetivo": target}
+
+
+def evaluate(probs, y, meta_te, pred=None):
+    pred = probs.argmax(1) if pred is None else pred
     cm = confusion_matrix(y, pred, labels=[0, 1, 2])
     rep = classification_report(y, pred, labels=[0, 1, 2], target_names=CLASS_NAMES, output_dict=True, zero_division=0)
     groups = meta_te["lesion_id"].values
@@ -195,6 +244,15 @@ def evaluate(probs, y, meta_te):
         "por_clase": {k: {m: float(v) for m, v in rep[k].items()} for k in CLASS_NAMES},
     }
     return out
+
+
+def build_report(probs_va, y_va, probs_te, y_te, meta_te, target):
+    """Métricas con 'gana la más probable' + regla de cribado ajustada en validación."""
+    metrics = evaluate(probs_te, y_te, meta_te)
+    decision = tune_decision(probs_va, y_va, target)
+    pred = apply_decision(probs_te, decision["tm"], decision["tn"])
+    metrics["regla_screening"] = evaluate(probs_te, y_te, meta_te, pred=pred)
+    return metrics, decision
 
 
 def write_card(path, metrics, info):
@@ -225,6 +283,26 @@ def write_card(path, metrics, info):
     ]
     for n, row in zip(CLASS_NAMES, cm):
         lines.append(f"| {n} | " + " | ".join(str(int(v)) for v in row) + " |")
+    s = m.get("regla_screening")
+    dec = (m.get("_info") or {}).get("decision")
+    if s and dec:
+        scm = np.array(s["matriz_confusion_filas_real_columnas_predicho"])
+        lines += [
+            "",
+            "## Regla de decisión orientada a cribado (la que usa la aplicación)",
+            f"Con \"gana la clase más probable\" se omiten malignos. La aplicación usa umbrales ajustados en validación "
+            f"(objetivo: que como máximo {100 * (1 - dec['objetivo']):.0f} % de los malignos se marquen Benigno):",
+            f"- Maligno si P(Maligno) ≥ {dec['tm']:.2f}  ·  Sospechoso si P(Sospechoso)+P(Maligno) ≥ {dec['tn']:.2f}  ·  si no, Benigno.",
+            f"- Sensibilidad (maligno marcado Sospechoso o Maligno): **{s['sensibilidad_maligno_o_sospechoso']:.3f}**",
+            f"- Sensibilidad para Maligno exacto: {s['sensibilidad_maligno']:.3f}  ·  Especificidad Benigno: **{s['especificidad_benigno']:.3f}**  ·  Accuracy balanceada: {s['accuracy_balanceada']:.3f}",
+            "- Costo: más benignos marcados como alerta (falsas alarmas). Es el compromiso habitual al cribar.",
+            "",
+            "Matriz de confusión con esta regla (filas = real, columnas = predicho):",
+            "",
+            "| | Benigno | Sospechoso | Maligno |", "|---|---|---|---|",
+        ]
+        for n, row in zip(CLASS_NAMES, scm):
+            lines.append(f"| {n} | " + " | ".join(str(int(v)) for v in row) + " |")
     lines += [
         "",
         "## Limitaciones (leer antes de usar)",
@@ -248,6 +326,8 @@ def main():
     ap.add_argument("--epochs2", type=int, default=10)
     ap.add_argument("--batch", type=int, default=32)
     ap.add_argument("--limit", type=int, default=0, help="usar solo N imágenes de entrenamiento (prueba rápida)")
+    ap.add_argument("--keep-duplicates", action="store_true", help="no quitar imágenes repetidas (comportamiento anterior)")
+    ap.add_argument("--target-sens", type=float, default=0.90, help="sensibilidad objetivo (maligno marcado no benigno) para la regla de cribado")
     args = ap.parse_args()
 
     tf.keras.utils.set_random_seed(SEED)
@@ -255,7 +335,7 @@ def main():
     os.makedirs(os.path.dirname(out), exist_ok=True)
 
     t0 = time.time()
-    X, meta = load_data(args.data_dir)
+    X, meta = load_data(args.data_dir, dedupe=not args.keep_duplicates)
     y = meta["y"].values.astype(np.int32)
     train, val, test = split_by_lesion(meta)
     if args.limit:
@@ -302,9 +382,10 @@ def main():
 
     # Evaluación sobre lesiones nunca vistas
     lg_te = model.predict(ds_te, verbose=0)
-    metrics = evaluate(softmax(lg_te / T), y[test], meta.iloc[test])
+    metrics, decision = build_report(softmax(lg_va / T), y[val], softmax(lg_te / T), y[test], meta.iloc[test], args.target_sens)
     info = {"version": args.version, "T": T, "n_total": int(len(X)), "n_lesiones": int(meta.lesion_id.nunique())}
-    metrics["_info"] = {**info, "clases": CLASS_NAMES, "entrenamiento_segundos": int(time.time() - t0), "limit": args.limit}
+    metrics["_info"] = {**info, "clases": CLASS_NAMES, "entrenamiento_segundos": int(time.time() - t0), "limit": args.limit,
+                        "dedupe": not args.keep_duplicates, "decision": decision}
 
     final.save(out)
     with open(os.path.join(os.path.dirname(out), "metrics.json"), "w", encoding="utf-8") as f:
@@ -315,6 +396,11 @@ def main():
     for k in ("accuracy", "accuracy_balanceada", "sensibilidad_maligno", "sensibilidad_maligno_o_sospechoso", "especificidad_benigno", "auc_ovr_macro"):
         print(f"  {k}: {metrics[k]:.3f}", flush=True)
     print("  matriz de confusión:", metrics["matriz_confusion_filas_real_columnas_predicho"], flush=True)
+    s = metrics["regla_screening"]
+    print(f"== Regla de cribado (tm={decision['tm']}, tn={decision['tn']}) ==", flush=True)
+    for k in ("sensibilidad_maligno_o_sospechoso", "sensibilidad_maligno", "especificidad_benigno", "accuracy_balanceada"):
+        print(f"  {k}: {s[k]:.3f}", flush=True)
+    print("  matriz de confusión:", s["matriz_confusion_filas_real_columnas_predicho"], flush=True)
     print(f"Modelo guardado en {out}  ({(time.time() - t0) / 60:.1f} min)", flush=True)
 
 

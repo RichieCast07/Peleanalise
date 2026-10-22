@@ -29,6 +29,26 @@ def _trained_model_version() -> str:
         return settings.MODEL_VERSION
 
 
+_decision_cache: dict | None | bool = False   # False = aún no leído
+
+
+def _decision_thresholds() -> dict | None:
+    """
+    Umbrales de la regla de cribado (los calcula training/train.py o calibrate_decision.py y los deja en
+    models/metrics.json -> _info.decision). Sin ellos se usa 'gana la clase más probable'.
+    """
+    global _decision_cache
+    if _decision_cache is False:
+        try:
+            path = os.path.join(os.path.dirname(os.path.abspath(settings.MODEL_PATH)), "metrics.json")
+            with open(path, encoding="utf-8") as f:
+                d = json.load(f)["_info"]["decision"]
+            _decision_cache = {"tm": float(d["tm"]), "tn": float(d["tn"])}
+        except Exception:
+            _decision_cache = None
+    return _decision_cache
+
+
 def is_mock_model() -> bool:
     get_model()
     return _is_mock
@@ -73,7 +93,16 @@ def predict(image_bgr: np.ndarray) -> dict:
     probs = model.predict(tensor, verbose=0)[0]
     elapsed_ms = int((time.time() - start) * 1000)
 
-    idx        = int(np.argmax(probs))
+    idx = int(np.argmax(probs))
+    rule = None if _is_mock else _decision_thresholds()
+    if rule:
+        # Regla de cribado: favorece detectar malignos (ver training/MODEL_CARD.md)
+        if probs[2] >= rule["tm"]:
+            idx = 2
+        elif probs[1] + probs[2] >= rule["tn"]:
+            idx = 1
+        else:
+            idx = 0
     label      = _class_names[idx]
     probability = float(probs[idx])
 

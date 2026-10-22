@@ -162,6 +162,13 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
             styles["Normal"],
         ))
 
+        if not is_demo:
+            story.append(Paragraph(
+                "Modelo experimental de apoyo: puede omitir lesiones malignas y generar falsas alarmas. "
+                "No sustituye el diagnóstico del dermatólogo ni la biopsia.",
+                ParagraphStyle("Exp", parent=styles["Normal"], fontSize=8, textColor=BRAND_GRAY, spaceBefore=6),
+            ))
+
         if is_demo:
             warn_style = ParagraphStyle(
                 "Warn", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#92400e"),

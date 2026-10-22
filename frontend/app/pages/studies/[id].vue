@@ -109,8 +109,20 @@
                   Las métricas ABCDE sí se calculan sobre la imagen.
                 </span>
               </div>
+              <div
+                v-else
+                class="mt-4 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800"
+              >
+                <svg class="w-4 h-4 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>
+                  <strong>Modelo experimental de apoyo.</strong>
+                  Puede omitir lesiones malignas y generar falsas alarmas; no sustituye el diagnóstico del dermatólogo ni la biopsia.
+                </span>
+              </div>
               <div class="mt-4 space-y-2">
-                <ProbBar label="Benigno"   :value="study.analysis.prediction?.probBenigno ?? 0"    color="bg-emerald-500" />
+                <ProbBar label="Benigno"  :value="study.analysis.prediction?.probBenigno ?? 0"    color="bg-emerald-500" />
                 <ProbBar label="Sospechoso" :value="study.analysis.prediction?.probSospechoso ?? 0" color="bg-amber-500" />
                 <ProbBar label="Maligno"    :value="study.analysis.prediction?.probMaligno ?? 0"    color="bg-red-500" />
               </div>
