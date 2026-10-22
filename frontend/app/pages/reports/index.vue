@@ -86,18 +86,19 @@
                     class="btn btn-ghost btn-sm">
                     Ver
                   </NuxtLink>
-                  <a
-                    :href="`/api/reports/${s.id}`"
-                    target="_blank"
+                  <button
+                    type="button"
                     class="btn btn-secondary btn-sm"
+                    :disabled="downloading === s.id"
                     :title="`Descargar reporte de ${s.patient.firstName} ${s.patient.lastName}`"
+                    @click="download(s.id)"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
-                    PDF
-                  </a>
+                    {{ downloading === s.id ? "Generando..." : "PDF" }}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -119,6 +120,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { useApiFetch }   from '~/composables/useApiFetch'
+import { useReportDownload } from '~/composables/useReportDownload'
 
 definePageMeta({ title: 'Reportes PDF', middleware: 'auth' })
 
@@ -135,6 +137,7 @@ type Study = {
 const search     = ref('')
 const riskFilter = ref('')
 const loading    = ref(false)
+const { download, downloading } = useReportDownload()
 const studies    = ref<Study[]>([])
 const meta       = ref({ page: 1, pages: 1, total: 0, limit: 15 })
 

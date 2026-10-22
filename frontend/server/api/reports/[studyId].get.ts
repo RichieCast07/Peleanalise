@@ -30,14 +30,27 @@ export default defineEventHandler(async (event) => {
     imageUrls[img.type] = `${baseUrl}${img.storagePath}`;
   }
 
-  const pdfResponse = await $fetch<{ pdf_base64: string }>(
-    `${config.pythonAiUrl}/report/generate`,
-    {
-      method:  "POST",
-      body:    { study, image_urls: imageUrls },
-      timeout: 30_000,
+  let pdfResponse: { pdf_base64: string };
+  try {
+    pdfResponse = await $fetch<{ pdf_base64: string }>(
+      `${config.pythonAiUrl}/report/generate`,
+      {
+        method:  "POST",
+        body:    { study, image_urls: imageUrls },
+        timeout: 30_000,
+      }
+    );
+  } catch (err) {
+    console.error("[Report]", err);
+    const e = err as { statusCode?: number; status?: number; data?: { detail?: unknown } };
+    if ((e.statusCode ?? e.status) && e.data?.detail) {
+      throw createError({ statusCode: 502, message: `Servicio de IA: ${String(e.data.detail)}` });
     }
-  );
+    throw createError({
+      statusCode: 503,
+      message: `No se pudo conectar con el servicio de IA (${config.pythonAiUrl}) para generar el PDF. Verifica que esté iniciado.`,
+    });
+  }
 
   await auditLog(event, "EXPORT", "studies", studyId, auth.userId);
 

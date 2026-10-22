@@ -74,7 +74,7 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
         [Paragraph("Sexo", label_style),
          Paragraph(str(p.get("sex", "—")), value_style),
          Paragraph("CURP", label_style),
-         Paragraph(str(p.get("curp", "—")), value_style)],
+         Paragraph(str(p.get("curp") or "—"), value_style)],
     ]
     pt = Table(patient_table_data, colWidths=[3 * cm, 5.5 * cm, 3 * cm, 5.5 * cm])
     pt.setStyle(TableStyle([
@@ -91,7 +91,7 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
         [Paragraph("Fecha", label_style), Paragraph(study_date, value_style),
          Paragraph("Localización", label_style), Paragraph(str(study_data.get("anatomicLocation", "—")), value_style)],
         [Paragraph("Tipo de lesión", label_style), Paragraph(str(study_data.get("lesionType", "—")), value_style),
-         Paragraph("Médico", label_style), Paragraph(f"{study_data.get('capturedBy', {}).get('firstName', '')} {study_data.get('capturedBy', {}).get('lastName', '')}", value_style)],
+         Paragraph("Capturado por", label_style), Paragraph(f"{study_data.get('capturedBy', {}).get('firstName', '')} {study_data.get('capturedBy', {}).get('lastName', '')}", value_style)],
     ], colWidths=[3 * cm, 5.5 * cm, 3 * cm, 5.5 * cm])
     story.append(study_info)
 
@@ -153,11 +153,27 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
             fontSize=20, fontName="Helvetica-Bold", textColor=color,
         )
         story.append(Paragraph(prediction.get("prediction", "—"), pred_style))
+
+        model_version = str(prediction.get("modelVersion") or "—")
+        is_demo       = model_version.startswith("demo")
+        model_label   = "Modelo de demostración" if is_demo else f"Modelo v{model_version}"
         story.append(Paragraph(
-            f"Probabilidad: {round(float(prediction.get('probability', 0)) * 100)}% · "
-            f"Modelo v{prediction.get('modelVersion', '—')}",
+            f"Probabilidad: {round(float(prediction.get('probability', 0)) * 100)}% · {model_label}",
             styles["Normal"],
         ))
+
+        if is_demo:
+            warn_style = ParagraphStyle(
+                "Warn", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#92400e"),
+                backColor=colors.HexColor("#fffbeb"), borderColor=colors.HexColor("#fcd34d"),
+                borderWidth=0.8, borderPadding=6, spaceBefore=10, leading=12,
+            )
+            story.append(Paragraph(
+                "<b>RESULTADO DE DEMOSTRACIÓN.</b> No hay un modelo de IA entrenado cargado en el sistema; "
+                "la clasificación y las probabilidades NO tienen validez clínica. "
+                "Las métricas ABCDE sí se calculan sobre la imagen.",
+                warn_style,
+            ))
 
     # ── Footer ───────────────────────────────────────────────────────────────
     story.append(Spacer(1, 1 * cm))

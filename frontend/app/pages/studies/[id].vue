@@ -35,12 +35,12 @@
           </svg>
           {{ analyzing ? 'Analizando...' : 'Analizar con IA' }}
         </button>
-        <a v-else :href="'/api/reports/' + study.id" target="_blank" class="btn-secondary">
+        <button v-else type="button" class="btn-secondary" :disabled="downloading === study.id" @click="download(study.id)">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
           </svg>
-          Descargar PDF
-        </a>
+          {{ downloading === study.id ? 'Generando...' : 'Descargar PDF' }}
+        </button>
       </div>
     </div>
 
@@ -188,6 +188,7 @@ const { data: study, pending, refresh } = await useAsyncData(
 )
 
 const analyzing = ref(false)
+const { download, downloading } = useReportDownload()
 
 async function runAnalysis() {
   analyzing.value = true
