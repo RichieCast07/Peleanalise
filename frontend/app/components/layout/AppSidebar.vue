@@ -1,5 +1,10 @@
 <template>
-  <aside class="w-56 bg-slate-900 flex flex-col shrink-0 h-full">
+  <aside
+    class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 flex flex-col shrink-0 h-full
+           transition-transform duration-200 ease-out
+           lg:static lg:z-auto lg:w-56 lg:translate-x-0"
+    :class="sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'"
+  >
     <!-- Logo -->
     <div class="flex items-center gap-3 px-4 h-14 shrink-0 border-b border-slate-800">
       <div class="w-7 h-7 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0">
@@ -91,6 +96,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth'
 const auth = useAuthStore()
+const sidebarOpen = useState<boolean>('sidebar-open', () => false)
 const initials = computed(() => {
   const u = auth.user
   if (!u) return '?'

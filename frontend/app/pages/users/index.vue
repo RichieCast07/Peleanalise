@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <input v-model="search" type="text" class="input w-64" placeholder="Buscar usuario..." @input="debouncedFetch" />
+    <div class="toolbar">
+      <input v-model="search" type="text" class="input sm:w-64" placeholder="Buscar usuario..." @input="debouncedFetch" />
       <button class="btn-primary" @click="openModal = true">+ Nuevo usuario</button>
     </div>
 
@@ -47,7 +47,7 @@
     <!-- User Modal -->
     <UiModal v-model="openModal" :title="editingUser ? 'Editar usuario' : 'Nuevo usuario'">
       <form @submit.prevent="saveUser" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div><label class="label">Nombre(s)</label><input v-model="form.firstName" class="input" required /></div>
           <div><label class="label">Apellidos</label><input v-model="form.lastName" class="input" required /></div>
         </div>

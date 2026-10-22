@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <input v-model="search" type="text" class="input pl-9 w-64 relative" placeholder="Buscar estudio..." @input="debouncedFetch" />
-        <select v-model="riskFilter" class="input w-40" @change="fetchPage(1)">
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <input v-model="search" type="text" class="input sm:w-64" placeholder="Buscar estudio..." @input="debouncedFetch" />
+        <select v-model="riskFilter" class="input sm:w-44" @change="fetchPage(1)">
           <option value="">Todos los riesgos</option>
           <option value="BENIGNO">Benigno</option>
           <option value="SOSPECHOSO">Sospechoso</option>
           <option value="MALIGNO">Maligno</option>
         </select>
       </div>
-      <NuxtLink to="/studies/new" class="btn-primary">+ Nuevo estudio</NuxtLink>
+      <NuxtLink to="/studies/new" class="btn-primary whitespace-nowrap">+ Nuevo estudio</NuxtLink>
     </div>
 
     <div class="card">

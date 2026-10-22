@@ -46,7 +46,17 @@ export default defineEventHandler(async (event) => {
     );
   } catch (err) {
     console.error("[AI Service]", err);
-    throw createError({ statusCode: 502, message: "Error al comunicarse con el servicio de IA" });
+    const e = err as { statusCode?: number; status?: number; data?: { detail?: unknown } };
+    const httpStatus = e.statusCode ?? e.status;
+    // El servicio respondió con un error (p. ej. no pudo descargar o leer la imagen)
+    if (httpStatus && e.data?.detail) {
+      throw createError({ statusCode: 502, message: `Servicio de IA: ${String(e.data.detail)}` });
+    }
+    // No hubo respuesta: el servicio no está corriendo o la URL es incorrecta
+    throw createError({
+      statusCode: 503,
+      message: `No se pudo conectar con el servicio de IA (${config.pythonAiUrl}). Verifica que esté iniciado (carpeta python-ai, puerto 8000).`,
+    });
   }
 
   const analysis = await prisma.$transaction(async (tx) => {

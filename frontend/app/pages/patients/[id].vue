@@ -3,7 +3,7 @@
   <div v-else-if="!patient" class="text-center py-20 text-gray-400">Paciente no encontrado</div>
   <div v-else class="space-y-6">
     <!-- Header -->
-    <div class="flex items-start justify-between">
+    <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="page-title">{{ patient.firstName }} {{ patient.lastName }}</h1>
         <p class="page-subtitle capitalize">

@@ -2,7 +2,9 @@
 node_modules/
 node_modules.mac.bak/
 python-ai/venv/
+python-ai/.venv/
 **/venv/
+**/.venv/
 __pycache__/
 *.pyc
 

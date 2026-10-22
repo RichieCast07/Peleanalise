@@ -10,16 +10,16 @@
     </div>
 
     <!-- Filters -->
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="relative">
-        <input v-model="search" type="text" class="input pl-9 w-64" placeholder="Buscar paciente o lesión..."
+    <div class="toolbar-group">
+      <div class="relative sm:w-64">
+        <input v-model="search" type="text" class="input pl-9" placeholder="Buscar paciente o lesión..."
           @input="debouncedFetch" />
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
           fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
       </div>
-      <select v-model="riskFilter" class="input w-44" @change="fetchPage(1)">
+      <select v-model="riskFilter" class="input sm:w-44" @change="fetchPage(1)">
         <option value="">Todos los riesgos</option>
         <option value="BENIGNO">Benigno</option>
         <option value="SOSPECHOSO">Sospechoso</option>

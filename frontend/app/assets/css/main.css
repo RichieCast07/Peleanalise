@@ -3,9 +3,22 @@
 @tailwind utilities;
 
 @layer base {
-  html { @apply scroll-smooth; }
-  body { @apply bg-slate-50 text-gray-900 font-sans antialiased; }
+  html { @apply scroll-smooth; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-slate-50 text-gray-900 font-sans antialiased; overflow-wrap: anywhere; }
   *:focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-1; }
+
+  /* Tablas: todas las <table> de la app comparten estos estilos */
+  table  { @apply w-full border-collapse text-sm text-left; }
+  thead th {
+    @apply bg-gray-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider
+           text-gray-500 whitespace-nowrap border-b border-gray-100;
+  }
+  tbody td { @apply px-4 py-3 align-middle text-gray-700 border-b border-gray-50; }
+  tbody tr:last-child td { @apply border-b-0; }
+  tbody tr:hover td { @apply bg-gray-50/70; }
+
+  /* Evita que imágenes y SVG desborden su contenedor */
+  img, svg { max-width: 100%; }
 }
 
 @layer components {
@@ -39,7 +52,17 @@
   .card-body   { @apply px-5 py-4; }
 
   /* ── Table ───────────────────────────────────────────────────────────── */
+  /* En pantallas angostas la tabla se desplaza en horizontal en vez de aplastar el texto */
   .table-wrapper { @apply overflow-x-auto rounded-xl border border-gray-200; }
+  .table-wrapper table { @apply min-w-[720px]; }
+  .table-wrapper td { @apply whitespace-nowrap; }
+  .table-wrapper thead th, .table-wrapper tbody td { @apply px-3 first:pl-5 last:pr-5; }
+
+  /* ── Barra de herramientas (búsqueda + filtros + acción) ─────────────── */
+  .toolbar        { @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between; }
+  .toolbar-group  { @apply flex flex-wrap items-center gap-3; }
+  .toolbar-group > * { @apply w-full sm:w-auto; }
+  .toolbar .btn-primary { @apply w-full sm:w-auto; }
 
   /* ── Badges ──────────────────────────────────────────────────────────── */
   .badge            { @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold; }
@@ -58,7 +81,7 @@
   .sidebar-link.active { @apply bg-brand-50 text-brand-700 font-semibold; }
 
   /* ── Page ────────────────────────────────────────────────────────────── */
-  .page-title    { @apply text-xl font-bold text-gray-900; }
+  .page-title    { @apply text-lg sm:text-xl font-bold text-gray-900; }
   .page-subtitle { @apply text-sm text-gray-500 mt-0.5; }
 
   /* ── Modal ───────────────────────────────────────────────────────────── */
@@ -68,7 +91,7 @@
     animation: fadeIn 0.15s ease;
   }
   .modal-panel {
-    @apply bg-white rounded-2xl shadow-xl w-full z-50;
+    @apply bg-white rounded-2xl shadow-xl w-full z-50 max-h-[90dvh] overflow-y-auto;
     animation: slideIn 0.2s ease;
   }
 

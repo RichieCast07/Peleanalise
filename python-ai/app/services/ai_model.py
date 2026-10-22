@@ -10,18 +10,29 @@ from tensorflow import keras
 from app.core.config import settings
 
 _model: keras.Model | None = None
+_is_mock = False
 _class_names = ["Benigno", "Sospechoso", "Maligno"]
+
+# Versión que se reporta cuando NO hay un modelo entrenado cargado
+DEMO_MODEL_VERSION = "demo-sin-entrenar"
+
+
+def is_mock_model() -> bool:
+    get_model()
+    return _is_mock
 
 
 def get_model() -> keras.Model:
-    global _model
+    global _model, _is_mock
     if _model is None:
         try:
             _model = keras.models.load_model(settings.MODEL_PATH)
+            _is_mock = False
             print(f"[AI] Model loaded from {settings.MODEL_PATH}")
         except Exception as e:
             print(f"[AI] WARNING: Could not load model ({e}). Using mock predictions.")
             _model = _build_mock_model()
+            _is_mock = True
     return _model
 
 
@@ -60,7 +71,7 @@ def predict(image_bgr: np.ndarray) -> dict:
         "prob_benigno":     float(probs[0]),
         "prob_sospechoso":  float(probs[1]),
         "prob_maligno":     float(probs[2]),
-        "model_version":    settings.MODEL_VERSION,
+        "model_version":    DEMO_MODEL_VERSION if _is_mock else settings.MODEL_VERSION,
         "inference_time_ms": elapsed_ms,
     }
 

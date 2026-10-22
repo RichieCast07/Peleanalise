@@ -7,7 +7,7 @@
   </div>
   <div v-else class="space-y-6">
     <!-- Header -->
-    <div class="flex items-start justify-between">
+    <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h1 class="page-title">Estudio Dermatológico</h1>
         <p class="page-subtitle">
@@ -18,7 +18,7 @@
           · {{ formatDate(study.studyDate) }}
         </p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <UiBadgeRisk :risk="study.riskLevel" />
         <button
           v-if="!study.analysis"
@@ -84,7 +84,7 @@
                   <p class="text-sm text-gray-500 mt-1">
                     Confianza:
                     <strong>{{ predictionPct }}%</strong>
-                    · Modelo v{{ study.analysis.prediction?.modelVersion }}
+                    · {{ isDemoModel ? 'Modelo de demostración' : 'Modelo v' + study.analysis.prediction?.modelVersion }}
                   </p>
                 </div>
                 <div :class="['w-14 h-14 rounded-full flex items-center justify-center', predictionIconBg]">
@@ -96,8 +96,21 @@
                   </svg>
                 </div>
               </div>
+              <div
+                v-if="isDemoModel"
+                class="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              >
+                <svg class="w-4 h-4 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <span>
+                  <strong>Resultado de demostración.</strong>
+                  No hay un modelo entrenado cargado en el servicio de IA, por lo que estas probabilidades no tienen validez clínica.
+                  Las métricas ABCDE sí se calculan sobre la imagen.
+                </span>
+              </div>
               <div class="mt-4 space-y-2">
-                <ProbBar label="Benigno"    :value="study.analysis.prediction?.probBenigno ?? 0"    color="bg-emerald-500" />
+                <ProbBar label="Benigno"   :value="study.analysis.prediction?.probBenigno ?? 0"    color="bg-emerald-500" />
                 <ProbBar label="Sospechoso" :value="study.analysis.prediction?.probSospechoso ?? 0" color="bg-amber-500" />
                 <ProbBar label="Maligno"    :value="study.analysis.prediction?.probMaligno ?? 0"    color="bg-red-500" />
               </div>
@@ -191,6 +204,11 @@ async function runAnalysis() {
 }
 
 const riskLevel = computed(() => study.value?.riskLevel ?? '')
+
+// El servicio de IA marca "demo-sin-entrenar" cuando no encuentra el archivo del modelo
+const isDemoModel = computed(() =>
+  String(study.value?.analysis?.prediction?.modelVersion ?? '').startsWith('demo'),
+)
 
 const predictionBorderClass = computed(() => {
   if (riskLevel.value === 'BENIGNO')    return 'border-emerald-200 bg-emerald-50/30'

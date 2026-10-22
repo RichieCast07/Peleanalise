@@ -1,6 +1,6 @@
 <template>
   <UiModal :model-value="modelValue" :title="patient ? 'Editar paciente' : 'Nuevo paciente'" size="lg" @update:model-value="$emit('update:modelValue', $event)">
-    <form @submit.prevent="submit" class="grid grid-cols-2 gap-4">
+    <form @submit.prevent="submit" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <label class="label">Nombre(s) *</label>
         <input v-model="form.firstName" class="input" :class="{ 'input-error': errors.firstName }" placeholder="María" required />
@@ -35,11 +35,11 @@
         <label class="label">Correo electrónico</label>
         <input v-model="form.email" type="email" class="input" placeholder="paciente@correo.mx" />
       </div>
-      <div class="col-span-2">
+      <div class="sm:col-span-2">
         <label class="label">Dirección</label>
         <input v-model="form.address" class="input" placeholder="Calle, colonia, ciudad, CP" />
       </div>
-      <div class="col-span-2">
+      <div class="sm:col-span-2">
         <label class="label">Observaciones</label>
         <textarea v-model="form.observations" class="input h-20 resize-none" placeholder="Antecedentes, alergias, notas..." />
       </div>

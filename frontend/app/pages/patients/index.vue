@@ -1,15 +1,15 @@
 <template>
   <div class="space-y-4">
     <!-- Toolbar -->
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <input v-model="search" type="text" class="input pl-9 w-64" placeholder="Buscar paciente..." @input="debouncedFetch" />
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <div class="relative sm:w-64">
+          <input v-model="search" type="text" class="input pl-9" placeholder="Buscar paciente..." @input="debouncedFetch" />
           <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
         </div>
-        <select v-model="sexFilter" class="input w-40" @change="fetchPage(1)">
+        <select v-model="sexFilter" class="input sm:w-40" @change="fetchPage(1)">
           <option value="">Todos</option>
           <option value="MASCULINO">Masculino</option>
           <option value="FEMENINO">Femenino</option>
@@ -28,10 +28,10 @@
               <th>Paciente</th>
               <th>Sexo</th>
               <th>CURP</th>
-              <th>Teléfono</th>
-              <th>Correo</th>
+              <th class="hidden 2xl:table-cell">Teléfono</th>
+              <th class="hidden 2xl:table-cell">Correo</th>
               <th>Estudios</th>
-              <th>Registro</th>
+              <th class="hidden xl:table-cell">Registro</th>
               <th></th>
             </tr>
           </thead>
@@ -50,12 +50,12 @@
               </td>
               <td class="capitalize">{{ p.sex.toLowerCase() }}</td>
               <td class="font-mono text-xs">{{ p.curp ?? "—" }}</td>
-              <td>{{ p.phone ?? "—" }}</td>
-              <td>{{ p.email ?? "—" }}</td>
+              <td class="hidden 2xl:table-cell">{{ p.phone ?? "—" }}</td>
+              <td class="hidden 2xl:table-cell">{{ p.email ?? "—" }}</td>
               <td>
                 <span class="badge bg-brand-50 text-brand-700">{{ p._count?.studies ?? 0 }}</span>
               </td>
-              <td class="text-xs text-gray-400">{{ formatDate(p.createdAt) }}</td>
+              <td class="hidden xl:table-cell text-xs text-gray-400">{{ formatDate(p.createdAt) }}</td>
               <td>
                 <div class="flex items-center gap-2">
                   <NuxtLink :to="`/patients/${p.id}`" class="btn btn-ghost btn-sm">Ver</NuxtLink>

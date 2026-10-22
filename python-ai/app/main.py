@@ -25,7 +25,8 @@ app.include_router(reports.router)
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": settings.APP_VERSION}
+    from app.services.ai_model import is_mock_model
+    return {"status": "ok", "version": settings.APP_VERSION, "model_loaded": not is_mock_model()}
 
 
 @app.on_event("startup")

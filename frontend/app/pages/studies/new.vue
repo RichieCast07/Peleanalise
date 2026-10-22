@@ -6,9 +6,9 @@
     </div>
 
     <form class="card" @submit.prevent="submit">
-      <div class="card-body grid grid-cols-2 gap-4">
+      <div class="card-body grid grid-cols-1 sm:grid-cols-2 gap-4">
         <!-- Paciente -->
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="label">Paciente *</label>
           <input
             v-model="patientSearch"
@@ -38,21 +38,21 @@
           <label class="label">Fecha del estudio</label>
           <input v-model="form.studyDate" type="date" class="input" />
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="label">Localización anatómica *</label>
           <input v-model="form.anatomicLocation" class="input" placeholder="Espalda, brazo derecho..." required minlength="2" maxlength="200" />
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="label">Comentarios clínicos</label>
           <textarea v-model="form.clinicalComments" class="input h-24 resize-none" maxlength="2000" placeholder="Evolución, síntomas, antecedentes..." />
         </div>
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="label">Imagen (opcional)</label>
           <input type="file" accept="image/jpeg,image/png,image/webp" class="input" @change="onFile" />
           <p class="text-xs text-gray-400 mt-1">JPEG, PNG o WebP · máx. 20 MB</p>
         </div>
 
-        <p v-if="error" class="col-span-2 text-sm text-red-600">{{ error }}</p>
+        <p v-if="error" class="sm:col-span-2 text-sm text-red-600">{{ error }}</p>
       </div>
       <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
         <NuxtLink to="/studies" class="btn-secondary">Cancelar</NuxtLink>

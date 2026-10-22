@@ -9,7 +9,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <!-- Asymmetry -->
       <div class="p-3 border border-gray-100 rounded-xl">
         <p class="text-xs font-bold text-gray-500 uppercase mb-2">A — Asimetría</p>
