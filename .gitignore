@@ -24,8 +24,8 @@ dist/
 frontend/uploads/
 frontend/public/uploads/
 logs/
-python-ai/models/*.keras
 python-ai/models/*.h5
+python-ai/.venv-train/
 
 # Sistema / IDE
 .DS_Store

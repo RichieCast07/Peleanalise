@@ -1,0 +1,4 @@
+# Dependencias extra para entrenar (se suman a ../requirements.txt)
+pyarrow
+pandas
+scikit-learn

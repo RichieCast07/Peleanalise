@@ -2,6 +2,8 @@
 TensorFlow/Keras model loader + Grad-CAM heatmap generator.
 """
 
+import json
+import os
 import time
 import numpy as np
 import cv2
@@ -15,6 +17,16 @@ _class_names = ["Benigno", "Sospechoso", "Maligno"]
 
 # Versión que se reporta cuando NO hay un modelo entrenado cargado
 DEMO_MODEL_VERSION = "demo-sin-entrenar"
+
+
+def _trained_model_version() -> str:
+    """Versión del modelo entrenado: la escribe training/train.py en models/metrics.json."""
+    try:
+        path = os.path.join(os.path.dirname(os.path.abspath(settings.MODEL_PATH)), "metrics.json")
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)["_info"]["version"]
+    except Exception:
+        return settings.MODEL_VERSION
 
 
 def is_mock_model() -> bool:
@@ -71,7 +83,7 @@ def predict(image_bgr: np.ndarray) -> dict:
         "prob_benigno":     float(probs[0]),
         "prob_sospechoso":  float(probs[1]),
         "prob_maligno":     float(probs[2]),
-        "model_version":    DEMO_MODEL_VERSION if _is_mock else settings.MODEL_VERSION,
+        "model_version":    DEMO_MODEL_VERSION if _is_mock else _trained_model_version(),
         "inference_time_ms": elapsed_ms,
     }
 
