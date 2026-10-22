@@ -41,7 +41,15 @@
                 <span v-else class="badge bg-gray-100 text-gray-500">Pendiente</span>
               </td>
               <td>
-                <NuxtLink :to="`/studies/${s.id}`" class="text-brand-600 hover:text-brand-700 text-xs font-medium">Ver →</NuxtLink>
+                <div class="flex items-center justify-end gap-3">
+                  <NuxtLink :to="`/studies/${s.id}`" class="text-brand-600 hover:text-brand-700 text-xs font-medium">Ver →</NuxtLink>
+                  <button
+                    v-if="can('studies:delete')"
+                    type="button"
+                    class="text-xs font-medium text-red-500 hover:text-red-700"
+                    @click="askDelete(s)"
+                  >Eliminar</button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -51,14 +59,39 @@
         <UiPagination :page="meta.page" :pages="meta.pages" :total="meta.total" :limit="meta.limit" @change="fetchPage" />
       </div>
     </div>
+
+    <StudyDeleteModal
+      v-model="deleteOpen"
+      :study-id="toDelete?.id ?? ''"
+      :patient-name="toDelete ? `${toDelete.patient.firstName} ${toDelete.patient.lastName}` : ''"
+      :study-date="toDelete ? formatDate(toDelete.studyDate) : ''"
+      @deleted="onDeleted"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
 import { useApiFetch } from "~/composables/useApiFetch";
+import { useRBAC } from "~/composables/useRBAC";
 
 definePageMeta({ title: "Estudios", middleware: "auth" });
+
+const { can } = useRBAC();
+
+const deleteOpen = ref(false);
+const toDelete   = ref<any>(null);
+
+function askDelete(s: any) {
+  toDelete.value  = s;
+  deleteOpen.value = true;
+}
+
+async function onDeleted() {
+  // Si era el único estudio de la última página, retrocede una página
+  const lastPageNowEmpty = studies.value.length === 1 && meta.value.page > 1;
+  await fetchPage(lastPageNowEmpty ? meta.value.page - 1 : meta.value.page);
+}
 
 const search     = ref("");
 const riskFilter = ref("");

@@ -41,6 +41,17 @@
           </svg>
           {{ downloading === study.id ? 'Generando...' : 'Descargar PDF' }}
         </button>
+        <button
+          v-if="can('studies:delete')"
+          type="button"
+          class="btn btn-secondary text-red-600 hover:bg-red-50"
+          @click="deleteOpen = true"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          Eliminar
+        </button>
       </div>
     </div>
 
@@ -179,12 +190,21 @@
         </div>
       </div>
     </div>
+
+    <StudyDeleteModal
+      v-model="deleteOpen"
+      :study-id="study.id"
+      :patient-name="`${study.patient.firstName} ${study.patient.lastName}`"
+      :study-date="formatDate(study.studyDate)"
+      @deleted="navigateTo('/studies')"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useNotification } from '~/composables/useNotification'
 import { useApiFetch } from '~/composables/useApiFetch'
+import { useRBAC } from '~/composables/useRBAC'
 
 definePageMeta({ title: 'Detalle de Estudio', middleware: 'auth' })
 
@@ -201,6 +221,8 @@ const { data: study, pending, refresh } = await useAsyncData(
 
 const analyzing = ref(false)
 const { download, downloading } = useReportDownload()
+const { can } = useRBAC()
+const deleteOpen = ref(false)
 
 async function runAnalysis() {
   analyzing.value = true
