@@ -21,7 +21,10 @@ export async function saveFile(
   const ext      = (originalName.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const filename = `${uuidv4()}.${ext}`;
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  // En Vercel siempre Blob. Puede autenticarse con BLOB_READ_WRITE_TOKEN o, en los almacenes nuevos,
+  // con BLOB_STORE_ID + OIDC (el SDK lo resuelve solo): por eso no se exige el token.
+  const useBlob = !!(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID || process.env.VERCEL);
+  if (useBlob) {
     const { put } = await import("@vercel/blob");
     const blob = await put(`${folder}/${filename}`, buffer, {
       access:          "public",

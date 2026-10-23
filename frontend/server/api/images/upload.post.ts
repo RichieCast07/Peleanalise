@@ -34,12 +34,15 @@ export default defineEventHandler(async (event) => {
   const study = await prisma.study.findFirst({ where: { id: studyId, deletedAt: null } });
   if (!study) throw createError({ statusCode: 404, message: "Estudio no encontrado" });
 
-  const { publicUrl, filename: savedFilename } = await saveFile(
-    Buffer.from(imageFile.data),
-    filename,
-    `studies/${studyId}`,
-    mimeType
-  );
+  let saved: Awaited<ReturnType<typeof saveFile>>;
+  try {
+    saved = await saveFile(Buffer.from(imageFile.data), filename, `studies/${studyId}`, mimeType);
+  } catch (err) {
+    console.error("[upload] no se pudo guardar la imagen:", err);
+    const reason = err instanceof Error ? err.message : "error desconocido";
+    throw createError({ statusCode: 502, message: `No se pudo guardar la imagen: ${reason}` });
+  }
+  const { publicUrl, filename: savedFilename } = saved;
 
   const image = await prisma.image.create({
     data: {

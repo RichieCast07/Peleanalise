@@ -58,8 +58,14 @@ async function uploadFile(file: File) {
     });
     emit("uploaded");
     notif.success("Imagen subida correctamente");
-  } catch {
-    notif.error("Error al subir la imagen");
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; status?: number; data?: { message?: string } };
+    const status = e?.statusCode ?? e?.status;
+    // 413 = la petición supera el límite de Vercel (4,5 MB)
+    notif.error(
+      "Error al subir la imagen",
+      status === 413 ? "La imagen es demasiado pesada. Prueba con una de menos de 4 MB." : e?.data?.message,
+    );
   } finally {
     uploading.value = false;
   }

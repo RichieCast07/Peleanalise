@@ -133,8 +133,12 @@ async function submit() {
           body:    fd,
           headers: { Authorization: `Bearer ${auth.accessToken}` },
         });
-      } catch {
-        notif.error("El estudio se creó, pero la imagen no se pudo subir");
+      } catch (upErr: unknown) {
+        const ue = upErr as { statusCode?: number; status?: number; data?: { message?: string } };
+        notif.error(
+          "El estudio se creó, pero la imagen no se pudo subir",
+          (ue?.statusCode ?? ue?.status) === 413 ? "La imagen es demasiado pesada (máx. ~4 MB)." : ue?.data?.message,
+        );
       }
     }
 
