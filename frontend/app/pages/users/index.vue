@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div class="toolbar">
       <input v-model="search" type="text" class="input sm:w-64" placeholder="Buscar usuario..." @input="debouncedFetch" />
-      <button class="btn-primary" @click="openModal = true">+ Nuevo usuario</button>
+      <button class="btn-primary" @click="openNew">+ Nuevo usuario</button>
     </div>
 
     <div class="card">
@@ -118,11 +118,22 @@ function editUser(u: Record<string, unknown>) {
   openModal.value = true;
 }
 
-function closeModal() {
-  openModal.value = false;
+function resetForm() {
   editingUser.value = null;
   Object.assign(form, { firstName: "", lastName: "", email: "", password: "", role: "CAPTURISTA", isActive: true });
 }
+
+function openNew() {
+  resetForm();
+  openModal.value = true;
+}
+
+function closeModal() {
+  openModal.value = false;   // el watch de abajo limpia el formulario
+}
+
+// Cualquier forma de cerrar la ventana (Cancelar, X, clic fuera, tras guardar) deja el formulario limpio
+watch(openModal, (open) => { if (!open) resetForm(); });
 
 async function saveUser() {
   saving.value = true;

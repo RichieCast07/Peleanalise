@@ -68,6 +68,8 @@ async function uploadFile(file: File) {
     );
   } finally {
     uploading.value = false;
+    // Sin esto, volver a elegir el MISMO archivo no dispara el evento "change" y parece que no hace nada
+    if (fileInput.value) fileInput.value.value = "";
   }
 }
 

@@ -75,23 +75,38 @@ const form = reactive({
   observations: "",
 });
 
-watch(() => props.patient, (p) => {
-  if (p) {
-    Object.assign(form, {
-      firstName:    p.firstName,
-      lastName:     p.lastName,
-      sex:          p.sex,
-      birthDate:    p.birthDate?.slice(0, 10) ?? "",
-      curp:         p.curp ?? "",
-      phone:        p.phone ?? "",
-      email:        p.email ?? "",
-      address:      p.address ?? "",
-      observations: p.observations ?? "",
-    });
-  } else {
-    Object.keys(form).forEach((k) => ((form as Record<string, string>)[k] = ""));
-  }
-}, { immediate: true });
+function resetForm() {
+  Object.keys(form).forEach((k) => ((form as Record<string, string>)[k] = ""));
+  Object.keys(errors).forEach((k) => delete errors[k]);
+}
+
+function fillForm(p: Patient) {
+  Object.keys(errors).forEach((k) => delete errors[k]);
+  Object.assign(form, {
+    firstName:    p.firstName,
+    lastName:     p.lastName,
+    sex:          p.sex,
+    birthDate:    p.birthDate?.slice(0, 10) ?? "",
+    curp:         p.curp ?? "",
+    phone:        p.phone ?? "",
+    email:        p.email ?? "",
+    address:      p.address ?? "",
+    observations: p.observations ?? "",
+  });
+}
+
+// El componente sigue montado entre una apertura y otra, así que el formulario se (re)inicia
+// CADA VEZ que se abre: con los datos del paciente al editar, o vacío al crear. Antes solo se
+// reiniciaba cuando cambiaba `patient`, y al crear otro (patient = null) quedaban los datos anteriores.
+watch(
+  () => props.modelValue,
+  (open) => {
+    if (!open) return;
+    if (props.patient) fillForm(props.patient);
+    else resetForm();
+  },
+  { immediate: true },
+);
 
 async function submit() {
   if (!form.firstName || !form.lastName || !form.sex || !form.birthDate) {

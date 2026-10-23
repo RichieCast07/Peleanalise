@@ -16,7 +16,7 @@
           <option value="OTRO">Otro</option>
         </select>
       </div>
-      <button class="btn-primary" @click="openCreate = true">+ Nuevo paciente</button>
+      <button class="btn-primary" @click="openNew">+ Nuevo paciente</button>
     </div>
 
     <!-- Table -->
@@ -127,6 +127,15 @@ const debouncedFetch = useDebounceFn(() => fetchPage(1), 400);
 async function fetchPage(page: number) {
   await store.fetchAll({ page, search: search.value || undefined, sex: sexFilter.value || undefined });
 }
+
+// "Nuevo paciente" siempre abre en modo creación (antes podía quedar el paciente de una edición cancelada)
+function openNew() {
+  editingPatient.value = null;
+  openCreate.value     = true;
+}
+
+// Al cerrar el formulario (Cancelar, X o clic fuera) se olvida el paciente en edición
+watch(openCreate, (open) => { if (!open) editingPatient.value = null; });
 
 function editPatient(p: Patient) {
   editingPatient.value = p;
