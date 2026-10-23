@@ -7,6 +7,7 @@ import os
 import time
 import numpy as np
 import cv2
+from PIL import Image
 import tensorflow as tf
 from tensorflow import keras
 from app.core.config import settings
@@ -80,7 +81,11 @@ def _build_mock_model() -> keras.Model:
 
 def preprocess_for_model(image_bgr: np.ndarray) -> np.ndarray:
     img = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img, (settings.IMG_SIZE, settings.IMG_SIZE))
+    # Mismo remuestreo que training/prepare_data.py (PIL BILINEAR, con antialiasing al reducir):
+    # cv2.INTER_LINEAR no filtra y produciría imágenes ligeramente distintas a las del entrenamiento.
+    size = settings.IMG_SIZE
+    if img.shape[0] != size or img.shape[1] != size:
+        img = np.asarray(Image.fromarray(img).resize((size, size), Image.BILINEAR))
     img = img.astype(np.float32) / 255.0
     return np.expand_dims(img, 0)
 

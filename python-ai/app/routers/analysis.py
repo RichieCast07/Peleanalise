@@ -38,10 +38,13 @@ async def analyze(req: AnalyzeRequest):
     abcde = compute_abcde(processed["original"], processed["mask"], pixel_per_mm=ppm)
 
     # 4. AI prediction
-    result = predict(processed["cleaned"])
+    # El modelo se entrenó con imágenes ORIGINALES (sin quitar vello ni normalizar contraste); si recibe
+    # la imagen "limpia" su rendimiento cae (ver python-ai/training/README.md). El preprocesado queda
+    # solo para las métricas ABCDE.
+    result = predict(processed["original"])
 
     # 5. Grad-CAM
-    gradcam_img = generate_gradcam(processed["cleaned"])
+    gradcam_img = generate_gradcam(processed["original"])
 
     # 6. (Optional) upload processed images to MinIO — omitted here for brevity
     processed_images = ProcessedImages()

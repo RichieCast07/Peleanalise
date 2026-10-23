@@ -25,6 +25,13 @@ Prueba rápida del pipeline (2-3 min, el modelo resultante NO sirve):
 
 Al terminar, reinicia el servicio de IA: deja de mostrar "demostración" y usa el modelo.
 
+## Importante: el modelo debe recibir la imagen ORIGINAL
+Se entrena con imágenes originales reducidas a 224x224 (PIL BILINEAR), sin quitar vello ni normalizar
+contraste. Si el servicio le pasa la imagen "limpia" (DullRazor + CLAHE de `image_processing.py`) el
+rendimiento se desploma (en una prueba, la detección de malignos bajó de 90 % a ~13 %). Por eso
+`app/routers/analysis.py` usa la imagen original para el modelo y el Grad-CAM, y deja el preprocesado
+solo para las métricas ABCDE. Si algún día se entrena con ese preprocesado, hay que cambiar ambos lados.
+
 ## Qué esperar (y qué no)
 - Ningún modelo es perfecto: léelo en `models/MODEL_CARD.md` (matriz de confusión, sensibilidad
   para melanoma, intervalos de confianza). Hay falsos negativos.

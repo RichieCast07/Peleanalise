@@ -156,7 +156,11 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
 
         model_version = str(prediction.get("modelVersion") or "—")
         is_demo       = model_version.startswith("demo")
-        model_label   = "Modelo de demostración" if is_demo else f"Modelo v{model_version}"
+        model_label   = (
+            "Modelo de demostración" if is_demo
+            else f"Modelo v{model_version}" if model_version[:1].isdigit()
+            else f"Modelo {model_version}"
+        )
         story.append(Paragraph(
             f"Probabilidad: {round(float(prediction.get('probability', 0)) * 100)}% · {model_label}",
             styles["Normal"],

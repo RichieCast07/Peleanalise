@@ -106,7 +106,7 @@
                   <p class="text-sm text-gray-500 mt-1">
                     Confianza:
                     <strong>{{ predictionPct }}%</strong>
-                    · {{ isDemoModel ? 'Modelo de demostración' : 'Modelo v' + study.analysis.prediction?.modelVersion }}
+                    · {{ modelLabel }}
                   </p>
                 </div>
                 <div :class="['w-14 h-14 rounded-full flex items-center justify-center', predictionIconBg]">
@@ -253,6 +253,13 @@ async function runAnalysis() {
 }
 
 const riskLevel = computed(() => study.value?.riskLevel ?? '')
+
+// "1.0.0" -> "Modelo v1.0.0"; "ham10000-mobilenetv2-v1" -> "Modelo ham10000-mobilenetv2-v1"
+const modelLabel = computed(() => {
+  if (isDemoModel.value) return 'Modelo de demostración'
+  const v = String(study.value?.analysis?.prediction?.modelVersion ?? '—')
+  return /^\d/.test(v) ? `Modelo v${v}` : `Modelo ${v}`
+})
 
 // El servicio de IA marca "demo-sin-entrenar" cuando no encuentra el archivo del modelo
 const isDemoModel = computed(() =>
