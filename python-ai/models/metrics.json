@@ -1,0 +1,133 @@
+{
+  "n_test_imagenes": 1908,
+  "n_test_lesiones": 1067,
+  "accuracy": 0.8375262054507338,
+  "accuracy_balanceada": 0.6863233733907884,
+  "accuracy_balanceada_IC95": [
+    0.6271576384761374,
+    0.7456763913741093
+  ],
+  "sensibilidad_maligno": 0.6077170418006431,
+  "sensibilidad_maligno_IC95": [
+    0.5248431360121689,
+    0.6923267326732673
+  ],
+  "sensibilidad_maligno_o_sospechoso": 0.6559485530546624,
+  "especificidad_benigno": 0.8956975228161669,
+  "sensibilidad_melanoma_marcado_no_benigno": 0.602803738317757,
+  "auc_ovr_macro": 0.9141674943685615,
+  "matriz_confusion_filas_real_columnas_predicho": [
+    [
+      1374,
+      13,
+      147
+    ],
+    [
+      10,
+      35,
+      18
+    ],
+    [
+      107,
+      15,
+      189
+    ]
+  ],
+  "por_clase": {
+    "Benigno": {
+      "precision": 0.9215291750503019,
+      "recall": 0.8956975228161669,
+      "f1-score": 0.9084297520661156,
+      "support": 1534.0
+    },
+    "Sospechoso": {
+      "precision": 0.5555555555555556,
+      "recall": 0.5555555555555556,
+      "f1-score": 0.5555555555555556,
+      "support": 63.0
+    },
+    "Maligno": {
+      "precision": 0.5338983050847458,
+      "recall": 0.6077170418006431,
+      "f1-score": 0.5684210526315789,
+      "support": 311.0
+    }
+  },
+  "regla_screening": {
+    "n_test_imagenes": 1908,
+    "n_test_lesiones": 1067,
+    "accuracy": 0.7484276729559748,
+    "accuracy_balanceada": 0.6382737690710877,
+    "accuracy_balanceada_IC95": [
+      0.5839342100691532,
+      0.7041502308503933
+    ],
+    "sensibilidad_maligno": 0.8713826366559485,
+    "sensibilidad_maligno_IC95": [
+      0.8157623839009288,
+      0.9240218197390823
+    ],
+    "sensibilidad_maligno_o_sospechoso": 0.9003215434083601,
+    "especificidad_benigno": 0.741851368970013,
+    "sensibilidad_melanoma_marcado_no_benigno": 0.8738317757009346,
+    "auc_ovr_macro": 0.9141674943685615,
+    "matriz_confusion_filas_real_columnas_predicho": [
+      [
+        1138,
+        7,
+        389
+      ],
+      [
+        3,
+        19,
+        41
+      ],
+      [
+        31,
+        9,
+        271
+      ]
+    ],
+    "por_clase": {
+      "Benigno": {
+        "precision": 0.9709897610921502,
+        "recall": 0.741851368970013,
+        "f1-score": 0.8410938654841094,
+        "support": 1534.0
+      },
+      "Sospechoso": {
+        "precision": 0.5428571428571428,
+        "recall": 0.30158730158730157,
+        "f1-score": 0.3877551020408163,
+        "support": 63.0
+      },
+      "Maligno": {
+        "precision": 0.38659058487874465,
+        "recall": 0.8713826366559485,
+        "f1-score": 0.5355731225296443,
+        "support": 311.0
+      }
+    }
+  },
+  "_info": {
+    "version": "ham10000-mobilenetv2-v1",
+    "T": 0.9999999999999999,
+    "n_total": 13354,
+    "n_lesiones": 7470,
+    "clases": [
+      "Benigno",
+      "Sospechoso",
+      "Maligno"
+    ],
+    "entrenamiento_segundos": 5490,
+    "limit": 0,
+    "dedupe": false,
+    "decision": {
+      "tm": 0.23,
+      "tn": 0.59,
+      "sens_no_benigno_val": 0.9003215434083601,
+      "especificidad_val": 0.7099087353324641,
+      "objetivo": 0.9
+    }
+  }
+}
