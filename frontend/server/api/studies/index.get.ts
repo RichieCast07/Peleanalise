@@ -6,7 +6,8 @@ const querySchema = z.object({
   limit:       z.coerce.number().min(1).max(100).default(15),
   patientId:   z.string().uuid().optional(),
   riskLevel:   z.enum(["BENIGNO", "SOSPECHOSO", "MALIGNO"]).optional(),
-  isProcessed: z.coerce.boolean().optional(),
+  // OJO: z.coerce.boolean() convertiría "false" en true (cualquier texto no vacío es true)
+  isProcessed: z.enum(["true", "false"]).transform((v) => v === "true").optional(),
   search:      z.string().optional(),
 });
 

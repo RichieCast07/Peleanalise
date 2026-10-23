@@ -13,8 +13,26 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    Image as RLImage, HRFlowable,
+    Image as RLImage, HRFlowable, KeepTogether,
 )
+
+
+LESION_LABELS = {
+    "MELANOMA": "Melanoma",
+    "NEVUS": "Nevus",
+    "CARCINOMA_BASOCELULAR": "Carcinoma basocelular",
+    "CARCINOMA_ESPINOCELULAR": "Carcinoma espinocelular",
+    "QUERATOSIS_ACTINCA": "Queratosis actínica",
+    "DERMATOFIBROMA": "Dermatofibroma",
+    "LESION_VASCULAR": "Lesión vascular",
+    "OTRO": "Otro / sin definir",
+}
+
+
+def _lesion_label(value: Any) -> str:
+    """Nombre legible del tipo de lesión (el guion bajo impedía que el texto se partiera bien)."""
+    v = str(value or "—")
+    return LESION_LABELS.get(v, v.replace("_", " ").capitalize())
 
 
 BRAND_BLUE   = colors.HexColor("#4f46e5")
@@ -90,28 +108,37 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
     study_info = Table([
         [Paragraph("Fecha", label_style), Paragraph(study_date, value_style),
          Paragraph("Localización", label_style), Paragraph(str(study_data.get("anatomicLocation", "—")), value_style)],
-        [Paragraph("Tipo de lesión", label_style), Paragraph(str(study_data.get("lesionType", "—")), value_style),
+        [Paragraph("Tipo de lesión", label_style), Paragraph(_lesion_label(study_data.get("lesionType")), value_style),
          Paragraph("Capturado por", label_style), Paragraph(f"{study_data.get('capturedBy', {}).get('firstName', '')} {study_data.get('capturedBy', {}).get('lastName', '')}", value_style)],
     ], colWidths=[3 * cm, 5.5 * cm, 3 * cm, 5.5 * cm])
     story.append(study_info)
 
     # ── Images ──────────────────────────────────────────────────────────────
     story.append(Paragraph("Imágenes del Estudio", heading_style))
-    img_row = []
+    caption_style = ParagraphStyle("Caption", parent=label_style, alignment=1, leading=11)
+    img_cells = []
     for img_type, b64 in image_b64.items():
         if not b64:
             continue
         try:
             img_data = base64.b64decode(b64)
-            img_buf  = io.BytesIO(img_data)
-            img      = RLImage(img_buf, width=5 * cm, height=5 * cm)
-            img_row.append([img, Paragraph(img_type, label_style)])
+            img      = RLImage(io.BytesIO(img_data), width=5 * cm, height=5 * cm)
+            # Cada imagen con su etiqueta debajo, centradas entre sí
+            cell = Table([[img], [Paragraph(img_type, caption_style)]], colWidths=[5.2 * cm])
+            cell.setStyle(TableStyle([
+                ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+                ("TOPPADDING",    (0, 1), (-1, 1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ]))
+            img_cells.append(cell)
         except Exception:
             pass
 
-    if img_row:
-        img_table = Table([img_row[:3]], colWidths=[6 * cm] * min(len(img_row), 3))
-        img_table.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")]))
+    if img_cells:
+        # 3 columnas de 5,6 cm = 16,8 cm: caben dentro de los márgenes (ancho útil 17 cm)
+        img_table = Table([img_cells[:3]], colWidths=[5.6 * cm] * min(len(img_cells), 3))
+        img_table.setStyle(TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER"), ("VALIGN", (0, 0), (-1, -1), "TOP")]))
         story.append(img_table)
 
     # ── ABCDE ───────────────────────────────────────────────────────────────
@@ -143,16 +170,20 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
 
     # ── AI Prediction ────────────────────────────────────────────────────────
     prediction = analysis.get("prediction", {})
+    # Toda la sección de predicción + pie va junta: así no se parte entre dos hojas ni se pisa con el pie.
+    tail: list = []
     if prediction:
-        story.append(Paragraph("Predicción de Inteligencia Artificial", heading_style))
+        tail.append(Paragraph("Predicción de Inteligencia Artificial", heading_style))
         risk  = str(prediction.get("prediction", "")).upper()
         color = RISK_COLORS.get(risk, BRAND_GRAY)
 
+        # leading (interlineado) debe ser mayor que el tamaño de letra: con el valor por defecto (12)
+        # las letras de 20 pt se encimaban con la línea siguiente.
         pred_style = ParagraphStyle(
             "Pred", parent=styles["Normal"],
-            fontSize=20, fontName="Helvetica-Bold", textColor=color,
+            fontSize=20, leading=26, spaceAfter=6, fontName="Helvetica-Bold", textColor=color,
         )
-        story.append(Paragraph(prediction.get("prediction", "—"), pred_style))
+        tail.append(Paragraph(str(prediction.get("prediction") or "—"), pred_style))
 
         model_version = str(prediction.get("modelVersion") or "—")
         is_demo       = model_version.startswith("demo")
@@ -161,39 +192,48 @@ def generate_pdf(study_data: dict[str, Any], image_b64: dict[str, str]) -> bytes
             else f"Modelo v{model_version}" if model_version[:1].isdigit()
             else f"Modelo {model_version}"
         )
-        story.append(Paragraph(
+        tail.append(Paragraph(
             f"Probabilidad: {round(float(prediction.get('probability', 0)) * 100)}% · {model_label}",
-            styles["Normal"],
+            ParagraphStyle("ProbLine", parent=styles["Normal"], fontSize=10, leading=14),
         ))
-
-        if not is_demo:
-            story.append(Paragraph(
-                "Modelo experimental de apoyo: puede omitir lesiones malignas y generar falsas alarmas. "
-                "No sustituye el diagnóstico del dermatólogo ni la biopsia.",
-                ParagraphStyle("Exp", parent=styles["Normal"], fontSize=8, textColor=BRAND_GRAY, spaceBefore=6),
-            ))
+        tail.append(Spacer(1, 8))
 
         if is_demo:
-            warn_style = ParagraphStyle(
-                "Warn", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#92400e"),
-                backColor=colors.HexColor("#fffbeb"), borderColor=colors.HexColor("#fcd34d"),
-                borderWidth=0.8, borderPadding=6, spaceBefore=10, leading=12,
-            )
-            story.append(Paragraph(
-                "<b>RESULTADO DE DEMOSTRACIÓN.</b> No hay un modelo de IA entrenado cargado en el sistema; "
-                "la clasificación y las probabilidades NO tienen validez clínica. "
-                "Las métricas ABCDE sí se calculan sobre la imagen.",
-                warn_style,
-            ))
+            box_text  = ("<b>RESULTADO DE DEMOSTRACIÓN.</b> No hay un modelo de IA entrenado cargado en el sistema; "
+                         "la clasificación y las probabilidades NO tienen validez clínica. "
+                         "Las métricas ABCDE sí se calculan sobre la imagen.")
+            box_bg, box_line, box_fg = "#fffbeb", "#fcd34d", "#92400e"
+        else:
+            box_text  = ("<b>Modelo experimental de apoyo.</b> Puede omitir lesiones malignas y generar falsas alarmas. "
+                         "No sustituye el diagnóstico del dermatólogo ni la biopsia.")
+            box_bg, box_line, box_fg = "#f0f9ff", "#bae6fd", "#075985"
+
+        # Recuadro como tabla (no como Paragraph con borderPadding, que se sale de su caja y pisa el texto vecino)
+        box = Table(
+            [[Paragraph(box_text, ParagraphStyle("Box", parent=styles["Normal"], fontSize=9, leading=12,
+                                                 textColor=colors.HexColor(box_fg)))]],
+            colWidths=[17 * cm],
+        )
+        box.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor(box_bg)),
+            ("BOX",           (0, 0), (-1, -1), 0.8, colors.HexColor(box_line)),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+            ("TOPPADDING",    (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        tail.append(box)
 
     # ── Footer ───────────────────────────────────────────────────────────────
-    story.append(Spacer(1, 1 * cm))
-    story.append(HRFlowable(width="100%", color=BRAND_GRAY, thickness=0.5))
-    story.append(Paragraph(
+    tail.append(Spacer(1, 0.8 * cm))
+    tail.append(HRFlowable(width="100%", color=BRAND_GRAY, thickness=0.5, spaceAfter=4))
+    tail.append(Paragraph(
         f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')} · PeleAnálise v1.0 · "
         "Este reporte es una herramienta de apoyo clínico. No reemplaza el juicio médico profesional.",
-        ParagraphStyle("Footer", parent=styles["Normal"], fontSize=7, textColor=BRAND_GRAY),
+        ParagraphStyle("Footer", parent=styles["Normal"], fontSize=7, leading=10, textColor=BRAND_GRAY),
     ))
+
+    story.append(KeepTogether(tail))
 
     doc.build(story)
     return buffer.getvalue()
