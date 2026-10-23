@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.security import require_api_key
 from app.routers import analysis, reports
 
 app = FastAPI(
@@ -11,16 +12,19 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_origins,
+    # allow_credentials=True es incompatible con origen "*"
+    allow_credentials=_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(analysis.router)
-app.include_router(reports.router)
+# Con AI_API_KEY definida, las rutas de análisis y reportes exigen la clave
+app.include_router(analysis.router, dependencies=[Depends(require_api_key)])
+app.include_router(reports.router,  dependencies=[Depends(require_api_key)])
 
 
 @app.get("/health")

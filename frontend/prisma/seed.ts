@@ -4,9 +4,11 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminHash = await bcrypt.hash("Admin123!", 12);
-  const doctorHash = await bcrypt.hash("Doctor123!", 12);
-  const capHash = await bcrypt.hash("Capturista123!", 12);
+  // En un despliegue público define SEED_ADMIN_PASSWORD, SEED_DOCTOR_PASSWORD y SEED_CAPTURISTA_PASSWORD
+  // para no dejar las contraseñas de ejemplo (Admin123!, etc.).
+  const adminHash  = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD      ?? "Admin123!", 12);
+  const doctorHash = await bcrypt.hash(process.env.SEED_DOCTOR_PASSWORD     ?? "Doctor123!", 12);
+  const capHash    = await bcrypt.hash(process.env.SEED_CAPTURISTA_PASSWORD ?? "Capturista123!", 12);
 
   await prisma.user.upsert({
     where: { email: "admin@peleanalise.mx" },

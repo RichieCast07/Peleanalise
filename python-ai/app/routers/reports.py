@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
 
+from app.core.security import check_image_url
 from app.services.report_generator import generate_pdf
 
 router = APIRouter(prefix="/report", tags=["reports"])
@@ -20,7 +21,9 @@ class ReportRequest(BaseModel):
 async def generate_report(req: ReportRequest):
     # Download images as base64
     image_b64: dict[str, str] = {}
-    async with httpx.AsyncClient(timeout=30) as client:
+    for url in req.image_urls.values():
+        check_image_url(url)
+    async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
         for img_type, url in req.image_urls.items():
             try:
                 resp = await client.get(url)

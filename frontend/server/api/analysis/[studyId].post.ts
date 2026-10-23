@@ -1,6 +1,8 @@
 import { prisma } from "../../utils/prisma";
 import { getAuthUser } from "../../utils/rbac";
 import { auditLog } from "../../utils/audit";
+import { absoluteImageUrl } from "../../utils/storage";
+import { aiHeaders } from "../../utils/ai";
 
 export default defineEventHandler(async (event) => {
   const auth    = getAuthUser(event);
@@ -16,9 +18,9 @@ export default defineEventHandler(async (event) => {
   if (!study.images.length) throw createError({ statusCode: 400, message: "El estudio no tiene imágenes" });
 
   const originalImage = study.images[0];
-  // storagePath es URL pública relativa: /uploads/studies/xxx/uuid.jpg
+  // storagePath: URL absoluta (Vercel Blob) o relativa (/uploads/... en desarrollo local)
   const host     = getRequestHeader(event, "host") ?? "localhost:3000";
-  const imageUrl = `http://${host}${originalImage.storagePath}`;
+  const imageUrl = absoluteImageUrl(originalImage.storagePath, host);
 
   type AIResponse = {
     prediccion: string;
@@ -42,7 +44,12 @@ export default defineEventHandler(async (event) => {
   try {
     aiResponse = await $fetch<AIResponse>(
       `${config.pythonAiUrl}/analyze`,
-      { method: "POST", body: { image_url: imageUrl, study_id: studyId }, timeout: 60_000 }
+      {
+        method:  "POST",
+        body:    { image_url: imageUrl, study_id: studyId },
+        headers: aiHeaders(config),
+        timeout: 90_000,   // la 1.ª llamada a un servicio en reposo (plan gratuito) puede tardar en despertar
+      }
     );
   } catch (err) {
     console.error("[AI Service]", err);

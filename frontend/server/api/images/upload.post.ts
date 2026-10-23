@@ -37,7 +37,8 @@ export default defineEventHandler(async (event) => {
   const { publicUrl, filename: savedFilename } = await saveFile(
     Buffer.from(imageFile.data),
     filename,
-    `studies/${studyId}`
+    `studies/${studyId}`,
+    mimeType
   );
 
   const image = await prisma.image.create({

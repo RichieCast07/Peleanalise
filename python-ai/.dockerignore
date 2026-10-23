@@ -1,0 +1,8 @@
+venv/
+.venv/
+.venv-train/
+__pycache__/
+*.pyc
+training/
+tests/
+.env

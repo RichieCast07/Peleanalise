@@ -1,6 +1,8 @@
 import { prisma } from "../../utils/prisma";
 import { getAuthUser } from "../../utils/rbac";
 import { auditLog } from "../../utils/audit";
+import { absoluteImageUrl } from "../../utils/storage";
+import { aiHeaders } from "../../utils/ai";
 
 export default defineEventHandler(async (event) => {
   const auth    = getAuthUser(event);
@@ -24,10 +26,9 @@ export default defineEventHandler(async (event) => {
 
   // Construir URLs absolutas para que Python las descargue
   const host = getRequestHeader(event, "host") ?? "localhost:3000";
-  const baseUrl = `http://${host}`;
   const imageUrls: Record<string, string> = {};
   for (const img of study.images) {
-    imageUrls[img.type] = `${baseUrl}${img.storagePath}`;
+    imageUrls[img.type] = absoluteImageUrl(img.storagePath, host);
   }
 
   let pdfResponse: { pdf_base64: string };
@@ -37,7 +38,8 @@ export default defineEventHandler(async (event) => {
       {
         method:  "POST",
         body:    { study, image_urls: imageUrls },
-        timeout: 30_000,
+        headers: aiHeaders(config),
+        timeout: 60_000,
       }
     );
   } catch (err) {

@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     MODEL_VERSION: str = "1.0.0"
     IMG_SIZE: int = 224
 
+    # Seguridad (cuando el servicio está publicado en internet)
+    AI_API_KEY: str = ""            # si se define, todas las rutas excepto /health exigen X-API-Key
+    ALLOWED_IMAGE_HOSTS: str = ""   # p. ej. "blob.vercel-storage.com"; vacío = sin restricción (solo desarrollo)
+    CORS_ORIGINS: str = "*"         # orígenes permitidos separados por coma
+
     # MinIO / S3 (for saving processed images)
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"

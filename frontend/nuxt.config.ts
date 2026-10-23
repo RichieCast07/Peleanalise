@@ -21,13 +21,19 @@ export default defineNuxtConfig({
     jwtSecret:        process.env.JWT_SECRET,
     jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
     pythonAiUrl:      process.env.PYTHON_AI_URL || "http://localhost:8000",
+    aiApiKey:         process.env.AI_API_KEY || "",
     public: {
       appName:    "PeleAnálise",
       appVersion: "1.0.0",
     },
   },
 
-  // Los archivos subidos (uploads/) se sirven con server/routes/uploads/[...path].get.ts
+  // Los archivos subidos (uploads/) se sirven con server/routes/uploads/[...path].get.ts (solo en local;
+  // en Vercel las imágenes viven en Vercel Blob).
+  nitro: {
+    // En Vercel el preset se detecta solo. Las funciones pueden tardar (análisis de IA, PDF).
+    vercel: { functions: { maxDuration: 60 } },
+  },
 
   tailwindcss: { configPath: "tailwind.config.ts" },
   typescript:  { strict: true, typeCheck: false },

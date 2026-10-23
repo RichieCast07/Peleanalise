@@ -126,7 +126,7 @@ async function submit() {
     if (image.value) {
       const fd = new FormData();
       fd.append("studyId", study.id);
-      fd.append("image", image.value);
+      fd.append("image", await prepareImageForUpload(image.value));
       try {
         await $fetch("/api/images/upload", {
           method:  "POST",

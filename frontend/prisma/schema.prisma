@@ -2,7 +2,9 @@
 // MySQL · Soft Delete · Audit Trail · Multi-role RBAC
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // rhel-openssl-3.0.x = motor para las funciones de Vercel (Linux)
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

@@ -50,7 +50,7 @@ async function uploadFile(file: File) {
   try {
     const fd = new FormData();
     fd.append("studyId", props.studyId);
-    fd.append("image", file);
+    fd.append("image", await prepareImageForUpload(file));
     await $fetch("/api/images/upload", {
       method:  "POST",
       body:    fd,

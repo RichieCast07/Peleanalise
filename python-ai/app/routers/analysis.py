@@ -9,12 +9,14 @@ from app.services.image_processing import full_pipeline
 from app.services.abcde import compute_abcde
 from app.services.ai_model import predict, generate_gradcam
 from app.core.config import settings
+from app.core.security import check_image_url
 
 router = APIRouter(prefix="/analyze", tags=["analysis"])
 
 
 async def download_image(url: str) -> np.ndarray:
-    async with httpx.AsyncClient(timeout=30) as client:
+    check_image_url(url)
+    async with httpx.AsyncClient(timeout=30, follow_redirects=False) as client:
         resp = await client.get(url)
         if resp.status_code != 200:
             raise HTTPException(status_code=400, detail=f"No se pudo descargar la imagen: {url}")
